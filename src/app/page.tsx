@@ -1,103 +1,95 @@
-import Image from "next/image";
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import PreferenceForm from '@/components/PreferenceForm';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    useEffect(() => {
+        const loadSession = async () => {
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            setIsAuthenticated(Boolean(session?.user));
+            setLoading(false);
+        };
+
+        loadSession();
+    }, []);
+
+    if (loading) {
+        return (
+            <main className="min-h-screen bg-slate-50 text-slate-900">
+                <div className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-6">
+                    <p className="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">
+                        Loading Finvestor
+                    </p>
+                </div>
+            </main>
+        );
+    }
+
+    if (isAuthenticated) {
+        return (
+            <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+                <div className="mx-auto max-w-3xl">
+                    <div className="mb-10 rounded-3xl bg-slate-900 px-8 py-10 text-white shadow-xl">
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-emerald-300">
+                            Finvestor AI
+                        </p>
+                        <h1 className="text-4xl font-semibold tracking-tight">
+                            Build a personalized investment plan in minutes.
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+                            Tell us about your goals, risk tolerance, and timeline. We&apos;ll generate
+                            an AI-assisted portfolio recommendation and save it to your dashboard.
+                        </p>
+                    </div>
+
+                    <div className="rounded-3xl bg-white p-8 shadow-lg ring-1 ring-slate-200">
+                        <PreferenceForm />
+                    </div>
+                </div>
+            </main>
+        );
+    }
+
+    return (
+        <main className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] px-6 py-12 text-slate-900">
+            <div className="mx-auto max-w-5xl">
+                <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-8 shadow-[0_25px_80px_-45px_rgba(15,23,42,0.45)] backdrop-blur md:p-12">
+                    <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">
+                        Finvestor AI
+                    </p>
+                    <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
+                        AI-guided portfolio ideas built around your real financial goals.
+                    </h1>
+                    <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600">
+                        Sign in with a magic link, answer a few questions, and review tailored
+                        investment recommendations with a searchable history in your dashboard.
+                    </p>
+
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                        <Link
+                            href="/login"
+                            className="inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        >
+                            Sign In to Start
+                        </Link>
+                        <Link
+                            href="/dashboard/history"
+                            className="inline-flex items-center justify-center rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                        >
+                            View Dashboard
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </main>
+    );
 }

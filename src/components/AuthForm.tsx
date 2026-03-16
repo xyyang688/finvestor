@@ -7,6 +7,7 @@ export default function AuthForm(){
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
 
     const handleLogin = async (e: React.FormEvent) => {
         // prevent reload for each submission
@@ -15,7 +16,7 @@ export default function AuthForm(){
         const {error} = await supabase.auth.signInWithOtp({
             email,
             options: {
-                emailRedirectTo: 'http://localhost:3100/dashboard',
+                emailRedirectTo: `${siteUrl}/dashboard`,
             }
         });
 
