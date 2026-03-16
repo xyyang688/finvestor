@@ -2,10 +2,8 @@
 
 import {useState} from 'react';
 import {supabase} from '@/lib/supabaseClient';
-import {useRouter} from 'next/navigation';
 
 export default function AuthForm(){
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -17,7 +15,7 @@ export default function AuthForm(){
         const {error} = await supabase.auth.signInWithOtp({
             email,
             options: {
-                emailRedirectTo: 'http://localhost:3000/dashboard',
+                emailRedirectTo: 'http://localhost:3100/dashboard',
             }
         });
 

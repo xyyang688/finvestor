@@ -157,7 +157,7 @@ export default function PortfolioHistory() {
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">No Portfolio History</h3>
                             <p className="text-gray-600 mb-6">
-                                You haven't generated any investment recommendations yet. Start building your portfolio history today.
+                                You haven&apos;t generated any investment recommendations yet. Start building your portfolio history today.
                             </p>
                             <button
                                 onClick={() => window.location.href = '/'}

@@ -8,6 +8,8 @@ AI-Powered Portfolio Platform
 
 - Dashboard - Displays latest recommendation, profile, and AI analysis.
 
+Open [http://localhost:3100](http://localhost:3100) with your browser to see the result.
+
 - Portfolio History - Shows past recommendations with expandable details.
 
 - Navigation and Layout - Dashboard layout with navigation links and logout option.
