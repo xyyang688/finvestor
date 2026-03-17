@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PreferenceForm from '@/components/PreferenceForm';
 import { supabase } from '@/lib/supabaseClient';
+import { isDemoModeEnabled } from '@/lib/demoMode';
 
 export default function Home() {
     const [loading, setLoading] = useState(true);
@@ -15,7 +16,7 @@ export default function Home() {
                 data: { session },
             } = await supabase.auth.getSession();
 
-            setIsAuthenticated(Boolean(session?.user));
+            setIsAuthenticated(Boolean(session?.user) || isDemoModeEnabled);
             setLoading(false);
         };
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import DashboardLayout from '@/components/DashboardLayout';
+import { demoPortfolio, isDemoModeEnabled, loadDemoPortfolios, saveDemoPortfolio } from '@/lib/demoMode';
 
 interface Portfolio{
     age: number;
@@ -28,6 +29,27 @@ export default function Dashboard() {
 
             // not logged in
             if (!session?.user){
+                if (isDemoModeEnabled) {
+                    const res = await fetch('/api/portfolios', { cache: 'no-store' });
+
+                    if (res.ok) {
+                        const demoPortfolios = await res.json();
+                        const latestPortfolio = demoPortfolios[0];
+
+                        if (latestPortfolio) {
+                            saveDemoPortfolio(latestPortfolio);
+                            setPortfolio(latestPortfolio);
+                        } else {
+                            const [cachedPortfolio] = loadDemoPortfolios();
+                            setPortfolio(cachedPortfolio ?? demoPortfolio);
+                        }
+                    } else {
+                        const [cachedPortfolio] = loadDemoPortfolios();
+                        setPortfolio(cachedPortfolio ?? demoPortfolio);
+                    }
+
+                    setLoading(false);
+                }
                 return;
             }
 
@@ -56,8 +78,8 @@ export default function Dashboard() {
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="flex justify-center items-center h-64">
-                    <div className="text-lg">Loading...</div>
+                <div className="flex h-64 items-center justify-center rounded-[2rem] border border-slate-200 bg-white/90 shadow-sm">
+                    <div className="text-lg font-medium text-slate-600">Loading your latest recommendation...</div>
                 </div>
             </DashboardLayout>
         );
@@ -66,24 +88,31 @@ export default function Dashboard() {
     return (
         <DashboardLayout>
             <div className="max-w-4xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Latest Investment Recommendation</h1>
-                    <p className="text-gray-600">Your most recent AI-generated investment portfolio advice</p>
+                <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white/90 px-8 py-8 shadow-sm">
+                    <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-600">
+                        Recommendation Overview
+                    </p>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                        Latest Investment Recommendation
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                        Your most recent AI-generated portfolio advice, including the underlying profile and timestamp.
+                    </p>
                 </div>
 
                 {portfolio ? (
-                    <div className="bg-white shadow-lg rounded-lg p-8 space-y-6 border">
+                    <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-white/95 p-8 shadow-lg">
                         <div className="flex justify-between items-start">
-                            <h2 className="text-2xl font-semibold text-gray-900">AI Investment Recommendation</h2>
-                            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            <h2 className="text-2xl font-semibold text-slate-950">AI Investment Recommendation</h2>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-500">
                                 {new Date(portfolio.created_at).toLocaleDateString()}
                             </span>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
-                                <div className="bg-blue-50 p-4 rounded-lg">
-                                    <h3 className="font-semibold text-blue-900 mb-2">Your Profile</h3>
+                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                    <h3 className="mb-3 font-semibold text-slate-950">Your Profile</h3>
                                     <div className="space-y-2 text-sm">
                                         <p><strong>Age:</strong> {portfolio.age} years</p>
                                         <p><strong>Risk Tolerance:</strong> {portfolio.risk_tolerance}</p>
@@ -94,51 +123,51 @@ export default function Dashboard() {
                             </div>
                             
                             <div className="space-y-4">
-                                <div className="bg-green-50 p-4 rounded-lg">
-                                    <h3 className="font-semibold text-green-900 mb-2">AI Analysis</h3>
-                                    <p className="text-sm text-green-800">
+                                <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
+                                    <h3 className="mb-3 font-semibold text-emerald-900">AI Analysis</h3>
+                                    <p className="text-sm text-emerald-800">
                                         Generated on: {new Date(portfolio.ai_recommendation.generated_at).toLocaleString()}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                            <h3 className="font-semibold text-gray-900 mb-4">Investment Recommendation</h3>
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                            <h3 className="mb-4 font-semibold text-slate-950">Investment Recommendation</h3>
                             <div className="prose max-w-none">
-                                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                <p className="whitespace-pre-line leading-relaxed text-slate-700">
                                     {portfolio.ai_recommendation.recommendation}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-4 border-t">
-                            <p className="text-sm text-gray-500">
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-4">
+                            <p className="text-sm text-slate-500">
                                 Last updated: {new Date(portfolio.created_at).toLocaleString()}
                             </p>
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                             >
                                 Get New Recommendation
                             </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white shadow-lg rounded-lg p-8 text-center">
+                    <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-8 text-center shadow-lg">
                         <div className="max-w-md mx-auto">
-                            <div className="text-gray-400 mb-4">
+                            <div className="mb-4 text-slate-400">
                                 <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No Recommendations Yet</h3>
-                            <p className="text-gray-600 mb-6">
+                            <h3 className="mb-2 text-lg font-medium text-slate-950">No Recommendations Yet</h3>
+                            <p className="mb-6 text-slate-600">
                                 Get your first AI-powered investment recommendation to start your financial planning journey.
                             </p>
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                                className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                             >
                                 Get Your First Recommendation
                             </button>

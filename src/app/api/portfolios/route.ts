@@ -7,6 +7,82 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 
+const isDemoModeEnabled = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
+const demoUserId = process.env.DEMO_USER_ID;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+function createPrivilegedSupabaseClient() {
+  if (!serviceRoleKey) {
+    return null;
+  }
+
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+  );
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: {
+          Authorization: req.headers.get('Authorization')!,
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (isDemoModeEnabled && !user) {
+    if (!demoUserId) {
+      return NextResponse.json({ error: 'Missing DEMO_USER_ID for demo mode.' }, { status: 500 });
+    }
+
+    const privilegedSupabase = createPrivilegedSupabaseClient();
+
+    if (!privilegedSupabase) {
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY for demo mode.' }, { status: 500 });
+    }
+
+    const { data, error } = await privilegedSupabase
+      .from('portfolios')
+      .select('*')
+      .eq('user_id', demoUserId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Supabase demo fetch error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data ?? []);
+  }
+
+  if (!user || userError) {
+    return NextResponse.json({ error: 'Unauthorized User' }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from('portfolios')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Supabase fetch error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data ?? []);
+}
+
 export async function POST(req: NextRequest) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,15 +101,17 @@ export async function POST(req: NextRequest) {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user || userError) {
+  if ((!user || userError) && !isDemoModeEnabled) {
     return NextResponse.json({ error: 'Unauthorized User' }, { status: 401 });
   }
 
-  console.log("User authenticated:", {
-    user_id: user.id,
-    user_id_type: typeof user.id,
-    user_email: user.email
-  });
+  if (user) {
+    console.log("User authenticated:", {
+      user_id: user.id,
+      user_id_type: typeof user.id,
+      user_email: user.email
+    });
+  }
 
   // console.log("user.id:", user.id);
   // console.log("Authorization header:", req.headers.get('Authorization'));
@@ -69,13 +147,51 @@ export async function POST(req: NextRequest) {
 
   // Debug: Log what we're trying to insert
   console.log("Attempting to insert:", {
-    user_id: user.id,
+    user_id: user?.id ?? demoUserId ?? 'demo-user',
     age,
     risk_tolerance,
     investment_goal,
     time_horizon,
     ai_recommendation,
   });
+
+  if (isDemoModeEnabled && !user) {
+    if (!demoUserId) {
+      return NextResponse.json({ error: 'Missing DEMO_USER_ID for demo mode.' }, { status: 500 });
+    }
+
+    const privilegedSupabase = createPrivilegedSupabaseClient();
+
+    if (!privilegedSupabase) {
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY for demo mode.' }, { status: 500 });
+    }
+
+    const { data, error } = await privilegedSupabase
+      .from('portfolios')
+      .insert([
+        {
+          user_id: demoUserId,
+          age,
+          risk_tolerance,
+          investment_goal,
+          time_horizon,
+          ai_recommendation,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase demo insert error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  }
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized User' }, { status: 401 });
+  }
 
   const { data, error } = await supabase
     .from('portfolios')

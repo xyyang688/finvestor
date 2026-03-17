@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { isDemoModeEnabled, saveDemoPortfolio } from '@/lib/demoMode';
 
 export default function PreferenceForm(){
     const router = useRouter();
@@ -29,7 +30,7 @@ export default function PreferenceForm(){
             data: {session},
         } = await supabase.auth.getSession();
 
-        if (!session){
+        if (!session && !isDemoModeEnabled){
             setError('No active session');
             setLoading(false);
             return;
@@ -39,7 +40,7 @@ export default function PreferenceForm(){
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${session.access_token}`,
+                ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
             },
             body: JSON.stringify({
                 age: parseInt(form.age),
@@ -53,6 +54,9 @@ export default function PreferenceForm(){
         const result = await res.json();
 
         if (res.ok){
+            if (isDemoModeEnabled) {
+                saveDemoPortfolio(result);
+            }
             router.push('/dashboard');
         }
         else{
